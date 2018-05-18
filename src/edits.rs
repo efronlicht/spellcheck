@@ -259,7 +259,7 @@ impl Iterator for Transposes {
     fn next(&mut self) -> Option<Self::Item> {
         match self.0.next() {
             None => None,
-            Some((ref a, ref b)) if b.len() < 2 => self.next(), //we can only transpose the rightmost two characters if there are two or more
+            Some((_, ref b)) if b.len() < 2 => self.next(), //we can only transpose the rightmost two characters if there are two or more
             Some((a, b)) => {
                 let mut transpose = a.to_string();
                 let chars: Vec<char> = b.chars().collect();

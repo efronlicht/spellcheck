@@ -56,10 +56,10 @@ fn test_transposes() {
 #[test]
 fn test_edits() {
     let got = Edits::from("foo");
-    let want = (Deletes::from("foo")
+    let want = Deletes::from("foo")
         .chain(Transposes::from("foo"))
         .chain(Replaces::from("foo"))
-        .chain(Inserts::from("foo")));
+        .chain(Inserts::from("foo"));
     assert!(equal_items(got, want));
 }
 
