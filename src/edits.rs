@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 ///Iterator over all the splits at a single position of a word
 ///i.e, for "foo", ("", "foo"), ("f", "oo"), ("fo", "o"), ("foo", "")
 pub struct Splits {
@@ -32,6 +33,60 @@ pub struct Edits {
     inserts: Inserts,
 }
 
+pub struct Dist2Edits {
+    current: Edits,
+    dist1: Vec<String>,
+    i: usize,
+}
+
+impl<'a, 'b> From<&'a str> for Dist2Edits {
+    fn from(word: &'a str) -> Self {
+        let unique_edits: HashSet<String> = Edits::from(word).collect();
+        let dist1: Vec<String> = unique_edits.into_iter().collect();
+        Dist2Edits {
+            current: Edits::from(word),
+            dist1,
+            i: 0,
+        }
+    }
+}
+
+impl Iterator for Dist2Edits {
+    type Item = String;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(edit) = self.current.next() {
+            Some(edit)
+        } else if self.i < self.dist1.len() {
+            self.current = Edits::from((&self.dist1[self.i]).to_string());
+            self.i += 1;
+            self.next()
+        } else {
+            None
+        }
+    }
+}
+
+impl From<String> for Dist2Edits {
+    fn from(s: String) -> Self {
+        let unique_edits: HashSet<String> = Edits::from(s.clone()).collect();
+        let dist1: Vec<String> = unique_edits.into_iter().collect();
+        Dist2Edits {
+            current: Edits::from(s),
+            dist1,
+            i: 0,
+        }
+    }
+}
+impl From<String> for Edits {
+    fn from(s: String) -> Self {
+        Edits {
+            deletes: Deletes::from(s.clone()),
+            transposes: Transposes::from(s.clone()),
+            replaces: Replaces::from(s.clone()),
+            inserts: Inserts::from(s.clone()),
+        }
+    }
+}
 impl<'a> From<&'a str> for Inserts {
     fn from(word: &str) -> Self {
         Inserts {
@@ -42,6 +97,43 @@ impl<'a> From<&'a str> for Inserts {
     }
 }
 
+impl From<String> for Splits {
+    fn from(s: String) -> Self {
+        Splits { word: s, i: 0 }
+    }
+}
+
+impl From<String> for Transposes {
+    fn from(s: String) -> Self {
+        Transposes(Splits::from(s))
+    }
+}
+
+impl From<String> for Deletes {
+    fn from(s: String) -> Self {
+        Deletes(Splits::from(s))
+    }
+}
+
+impl From<String> for Replaces {
+    fn from(s: String) -> Self {
+        Replaces {
+            splits: Splits::from(s),
+            current: None,
+            offset: 0,
+        }
+    }
+}
+
+impl From<String> for Inserts {
+    fn from(s: String) -> Self {
+        Inserts {
+            splits: Splits::from(s),
+            current: None,
+            offset: 0,
+        }
+    }
+}
 impl<'a> From<&'a str> for Transposes {
     fn from(word: &'a str) -> Self {
         Transposes(Splits::from(word))

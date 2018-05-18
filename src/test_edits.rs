@@ -63,6 +63,16 @@ fn test_edits() {
     assert!(equal_items(got, want));
 }
 
+use std::collections::HashSet;
+#[test]
+fn test_dist2edits() {
+    let dist2: HashSet<String> = Dist2Edits::from("foo").collect();
+    assert!(dist2.contains("f"));
+    assert!(dist2.contains("fooaa"));
+    assert!(dist2.contains("of")); // delete & transpose
+    assert!(dist2.contains("foof"))
+}
+
 fn equal_items<T, A, B>(a: A, b: B) -> bool
 where
     T: Eq,

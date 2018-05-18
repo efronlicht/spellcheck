@@ -1,34 +1,37 @@
+#![feature(map_get_key_value)]
 pub mod edits;
 #[cfg(test)]
 mod test_edits;
 
 extern crate itertools;
+use edits::*;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
+pub struct Dict(HashMap<String, usize>);
 
-pub struct Dict<'a> {
-    count: HashMap<&'a str, usize>,
-    total: usize,
-}
-
-impl<'a> Dict<'a> {
-    pub fn from_words<T: IntoIterator<Item = &'a str>>(t: T) -> Self {
-        let mut count: HashMap<&str, usize> = HashMap::new();
+impl Dict {
+    pub fn from_words<'a, T: IntoIterator<Item = &'a str>>(t: T) -> Self {
+        let mut count: HashMap<String, usize> = HashMap::new();
         for k in t {
-            *count.entry(k.clone()).or_insert(0) += 1;
+            *count.entry(k.to_string()).or_insert(0) += 1;
         }
-        let mut total = 0;
-        for (_, c) in &count {
-            total += *c
-        }
-        Dict { count, total }
+        Dict(count)
     }
 
-    pub fn prob(&self, word: &str) -> f64 {
-        (*self.count.get(word).unwrap_or(&0) as f64) / self.total as f64
-    }
-
-    pub fn is_known(&self, word: &str) -> bool {
-        self.count.contains_key(word)
+    ///the most likely correction for a word, if any
+    pub fn correction(&self, word: &str) -> Option<String> {
+        if self.0.contains_key(word) {
+            Some(word.to_string())
+        } else if let Some(dist_1_correction) = Edits::from(word) 
+        // if there is a distance-1 correction, we don't bother checking distance-2 corrections
+            .filter(|x| self.0.contains_key(x))
+            .max_by_key(|x| self.0[x])
+        {
+            Some(dist_1_correction)
+        } else {
+            Dist2Edits::from(word)
+                .filter(|x| self.0.contains_key(x))
+                .max_by_key(|x| self.0[x])
+        }
     }
 }
