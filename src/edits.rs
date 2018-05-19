@@ -14,14 +14,14 @@ pub struct Deletes(Splits);
 pub struct Replaces {
     splits: Splits,
     current: Option<(String, String)>,
-    offset: u8,
+    i: u8,
 }
 
 //Iterator over all the words formed from the insertion of a letter in a...z in any position in a word, including before the first character and after the last
 pub struct Inserts {
     splits: Splits,
     current: Option<(String, String)>,
-    offset: u8,
+    i: u8,
 }
 
 ///Iterator over all the distance-1 edits of a word; deletion, insertion, or replacement of one character,
@@ -91,7 +91,7 @@ impl<'a> From<&'a str> for Inserts {
     fn from(word: &str) -> Self {
         Inserts {
             splits: Splits::from(word),
-            offset: 0,
+            i: 0,
             current: None,
         }
     }
@@ -120,7 +120,7 @@ impl From<String> for Replaces {
         Replaces {
             splits: Splits::from(s),
             current: None,
-            offset: 0,
+            i: 0,
         }
     }
 }
@@ -130,7 +130,7 @@ impl From<String> for Inserts {
         Inserts {
             splits: Splits::from(s),
             current: None,
-            offset: 0,
+            i: 0,
         }
     }
 }
@@ -153,7 +153,7 @@ impl<'a> From<&'a str> for Replaces {
         Replaces {
             splits: Splits::from(word),
             current: None,
-            offset: 0,
+            i: 0,
         }
     }
 }
@@ -199,8 +199,8 @@ fn nth_letter(n: u8) -> char {
 impl Iterator for Inserts {
     type Item = String;
     fn next(&mut self) -> Option<Self::Item> {
-        if let (Some((ref a, ref b)), n @ 0...25) = (&self.current, self.offset) {
-            self.offset += 1;
+        if let (Some((ref a, ref b)), n @ 0...25) = (&self.current, self.i) {
+            self.i += 1;
             let mut insert = a.to_string();
             insert.push(nth_letter(n));
             return Some(insert + b);
@@ -208,7 +208,7 @@ impl Iterator for Inserts {
         match self.splits.next() {
             None => None,
             Some((a, b)) => {
-                self.offset = 0;
+                self.i = 0;
                 self.current = Some((a, b));
                 self.next()
             }
@@ -219,13 +219,13 @@ impl Iterator for Inserts {
 impl Iterator for Replaces {
     type Item = String;
     fn next(&mut self) -> Option<Self::Item> {
-        match (&self.current, self.offset) {
+        match (&self.current, self.i) {
             (Some((ref a, ref b)), n @ 0...25) if a.len() > 0 => {
+                self.i += 1;
                 let mut replace = a.to_string();
                 replace.pop();
                 replace.push(nth_letter(n));
-                self.offset += 1;
-                return Some(replace + &b);
+                return Some(replace + b);
             }
             _ => {}
         };
@@ -233,7 +233,7 @@ impl Iterator for Replaces {
         match self.splits.next() {
             None => None,
             Some((a, b)) => {
-                self.offset = 0;
+                self.i = 0;
                 self.current = Some((a, b));
                 self.next()
             }
